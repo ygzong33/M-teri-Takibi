@@ -28,22 +28,54 @@
       border: none;
       cursor: pointer;
       margin-top: 10px;
+      border-radius: 5px;
     }
 
     button:hover {
       background-color: #2980b9;
     }
-
-    .musteri-btn {
+    
+    .musteri-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       background-color: #ecf0f1;
       margin: 5px 0;
       padding: 10px;
-      cursor: pointer;
       border-radius: 5px;
     }
 
-    .musteri-btn:hover {
-      background-color: #d0d3d4;
+    .musteri-adi {
+      cursor: pointer;
+      flex-grow: 1;
+    }
+    
+    .musteri-durum {
+      font-size: 0.8em;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 10px;
+      margin-left: 10px;
+      color: white;
+    }
+
+    /* Durum Renkleri */
+    .durum-Randevuda { background-color: #f39c12; } /* Turuncu */
+    .durum-Aranacak { background-color: #3498db; } /* Mavi */
+    .durum-Gidilecek { background-color: #9b59b6; } /* Mor */
+    .durum-Satış { background-color: #2ecc71; } /* Yeşil */
+    
+    .sil-btn {
+      background-color: #e74c3c; /* Kırmızı */
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-left: 15px;
+    }
+    .sil-btn:hover {
+      background-color: #c0392b;
     }
 
     .panel {
@@ -86,7 +118,8 @@
       if (!ad) return alert("Lütfen müşteri adı girin.");
 
       const id = Date.now();
-      musteriler.push({ id, ad, telefon: "", tesisat: "", adres: "", durum: "", kwh: "" });
+      // Yeni müşteri eklenirken varsayılan durum "Aranacak" olsun
+      musteriler.push({ id, ad, telefon: "", tesisat: "", adres: "", durum: "Aranacak", kwh: "" });
 
       document.getElementById("musteriAdi").value = "";
       kaydetLocal();
@@ -97,12 +130,44 @@
       const liste = document.getElementById("musteriListesi");
       liste.innerHTML = "";
       musteriler.forEach(m => {
-        const btn = document.createElement("div");
-        btn.className = "musteri-btn";
-        btn.innerText = m.ad;
-        btn.onclick = () => musteriDetayGoster(m.id);
-        liste.appendChild(btn);
+        const item = document.createElement("div");
+        item.className = "musteri-item";
+        
+        // Müşteri adı ve durumunu içeren sol taraf
+        const musteriBilgi = document.createElement("div");
+        musteriBilgi.className = "musteri-adi";
+        musteriBilgi.innerText = m.ad;
+        musteriBilgi.onclick = () => musteriDetayGoster(m.id);
+        
+        // Durum etiketi
+        const durumEtiketi = document.createElement("span");
+        durumEtiketi.className = `musteri-durum durum-${m.durum}`;
+        durumEtiketi.innerText = m.durum;
+
+        // Silme butonu
+        const silBtn = document.createElement("button");
+        silBtn.className = "sil-btn";
+        silBtn.innerText = "Sil";
+        silBtn.onclick = (event) => {
+            event.stopPropagation(); // Detay panelinin açılmasını engelle
+            musteriSil(m.id);
+        };
+        
+        item.appendChild(musteriBilgi);
+        item.appendChild(durumEtiketi);
+        item.appendChild(silBtn);
+        liste.appendChild(item);
       });
+    }
+    
+    function musteriSil(id) {
+        if (confirm("Bu müşteriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
+            musteriler = musteriler.filter(m => m.id !== id);
+            kaydetLocal();
+            musterileriGoster();
+            // Eğer silinen müşterinin detayı açıksa paneli temizle
+            document.getElementById("detayPaneli").innerHTML = "";
+        }
     }
 
     function musteriDetayGoster(id) {
@@ -122,8 +187,8 @@
 
           <label>Durum:</label>
           <select id="durum_${id}" onchange="durumDegisti(${id})">
-            <option ${m.durum === "Randevuda" ? "selected" : ""}>Randevuda</option>
             <option ${m.durum === "Aranacak" ? "selected" : ""}>Aranacak</option>
+            <option ${m.durum === "Randevuda" ? "selected" : ""}>Randevuda</option>
             <option ${m.durum === "Gidilecek" ? "selected" : ""}>Gidilecek</option>
             <option ${m.durum === "Satış" ? "selected" : ""}>Satış</option>
           </select>
@@ -170,7 +235,7 @@
 
       kaydetLocal();
       alert("Müşteri bilgileri kaydedildi.");
-      musterileriGoster();
+      musterileriGoster(); // Listeyi durum değişikliğiyle güncelle
       document.getElementById("detayPaneli").innerHTML = "";
     }
 
