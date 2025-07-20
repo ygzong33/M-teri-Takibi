@@ -9,118 +9,125 @@
       padding: 20px;
       background: #f9f9f9;
     }
-
     h2 {
       color: #333;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
     }
-
     input, select {
       padding: 8px;
       margin: 5px 0 10px;
       width: 100%;
       box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
-
     button {
-      padding: 10px 20px;
-      background-color: #3498db;
+      padding: 10px 15px;
       color: white;
       border: none;
       cursor: pointer;
-      margin-top: 10px;
       border-radius: 5px;
+      font-weight: bold;
     }
-
     button:hover {
-      background-color: #2980b9;
+      opacity: 0.9;
     }
-    
+    button:disabled {
+      background-color: #bdc3c7;
+      cursor: not-allowed;
+    }
+    .add-btn { background-color: #3498db; }
+    .delete-selected-btn { background-color: #e74c3c; }
+
+    .musteri-list-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      gap: 10px;
+    }
     .musteri-item {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      background-color: #ecf0f1;
+      background-color: #fff;
       margin: 5px 0;
       padding: 10px;
       border-radius: 5px;
+      border: 1px solid #ecf0f1;
+      transition: background-color 0.2s;
     }
-
+    .musteri-item:hover {
+      background-color: #f5f5f5;
+    }
+    .musteri-item input[type="checkbox"] {
+      width: auto;
+      margin-right: 15px;
+      transform: scale(1.2);
+    }
     .musteri-adi {
       cursor: pointer;
       flex-grow: 1;
+      font-weight: bold;
     }
-    
     .musteri-durum {
       font-size: 0.8em;
       font-weight: bold;
-      padding: 3px 8px;
-      border-radius: 10px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      color: white;
       margin-left: 10px;
-      color: white;
+      white-space: nowrap;
     }
-
     /* Durum Renkleri */
-    .durum-Randevuda { background-color: #f39c12; } /* Turuncu */
-    .durum-Aranacak { background-color: #3498db; } /* Mavi */
-    .durum-Gidilecek { background-color: #9b59b6; } /* Mor */
-    .durum-Satış { background-color: #2ecc71; } /* Yeşil */
-    
-    .sil-btn {
-      background-color: #e74c3c; /* Kırmızı */
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      cursor: pointer;
-      border-radius: 5px;
-      margin-left: 15px;
-    }
-    .sil-btn:hover {
-      background-color: #c0392b;
-    }
+    .durum-Randevuda { background-color: #f39c12; }
+    .durum-Aranacak { background-color: #3498db; }
+    .durum-Gidilecek { background-color: #9b59b6; }
+    .durum-Satış { background-color: #2ecc71; }
 
     .panel {
       background: #fff;
-      padding: 15px;
+      padding: 20px;
       margin-top: 20px;
       border: 1px solid #ccc;
       border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
   <h2>Yeni Müşteri Ekle</h2>
   <input type="text" id="musteriAdi" placeholder="Müşteri adı girin">
-  <button onclick="musteriEkle()">Ekle</button>
+  <button class="add-btn" onclick="musteriEkle()">Ekle</button>
 
   <h2>Müşteriler</h2>
+  <div class="musteri-list-header">
+      <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+      <label for="selectAllCheckbox">Tümünü Seç</label>
+      <button id="deleteSelectedBtn" class="delete-selected-btn" onclick="deleteSelected()" disabled>Seçilenleri Sil</button>
+  </div>
   <div id="musteriListesi"></div>
 
   <div id="detayPaneli"></div>
 
   <script>
     let musteriler = [];
+    let seciliMusteriler = new Set();
 
-    // Sayfa yüklendiğinde localStorage'dan verileri al
     window.onload = function() {
       const data = localStorage.getItem("musteriler");
       if (data) {
         musteriler = JSON.parse(data);
         musterileriGoster();
       }
+      updateDeleteButtonState();
     };
 
     function musteriEkle() {
       const ad = document.getElementById("musteriAdi").value.trim();
       if (!ad) return alert("Lütfen müşteri adı girin.");
-
       const id = Date.now();
-      // Yeni müşteri eklenirken varsayılan durum "Aranacak" olsun
       musteriler.push({ id, ad, telefon: "", tesisat: "", adres: "", durum: "Aranacak", kwh: "" });
-
       document.getElementById("musteriAdi").value = "";
       kaydetLocal();
       musterileriGoster();
@@ -132,116 +139,70 @@
       musteriler.forEach(m => {
         const item = document.createElement("div");
         item.className = "musteri-item";
-        
-        // Müşteri adı ve durumunu içeren sol taraf
-        const musteriBilgi = document.createElement("div");
-        musteriBilgi.className = "musteri-adi";
-        musteriBilgi.innerText = m.ad;
-        musteriBilgi.onclick = () => musteriDetayGoster(m.id);
-        
-        // Durum etiketi
-        const durumEtiketi = document.createElement("span");
-        durumEtiketi.className = `musteri-durum durum-${m.durum}`;
-        durumEtiketi.innerText = m.durum;
 
-        // Silme butonu
-        const silBtn = document.createElement("button");
-        silBtn.className = "sil-btn";
-        silBtn.innerText = "Sil";
-        silBtn.onclick = (event) => {
-            event.stopPropagation(); // Detay panelinin açılmasını engelle
-            musteriSil(m.id);
-        };
-        
-        item.appendChild(musteriBilgi);
-        item.appendChild(durumEtiketi);
-        item.appendChild(silBtn);
+        item.innerHTML = `
+            <input type="checkbox" data-id="${m.id}" onchange="toggleSelection(${m.id})" ${seciliMusteriler.has(m.id) ? 'checked' : ''}>
+            <span class="musteri-adi" onclick="musteriDetayGoster(${m.id})">${m.ad}</span>
+            <span class="musteri-durum durum-${m.durum}">${m.durum}</span>
+        `;
         liste.appendChild(item);
       });
+      document.getElementById('selectAllCheckbox').checked = musteriler.length > 0 && seciliMusteriler.size === musteriler.length;
+    }
+
+    function toggleSelection(id) {
+        if (seciliMusteriler.has(id)) {
+            seciliMusteriler.delete(id);
+        } else {
+            seciliMusteriler.add(id);
+        }
+        document.getElementById('selectAllCheckbox').checked = musteriler.length > 0 && seciliMusteriler.size === musteriler.length;
+        updateDeleteButtonState();
+    }
+
+    function toggleSelectAll() {
+        const isChecked = document.getElementById('selectAllCheckbox').checked;
+        seciliMusteriler.clear();
+        if (isChecked) {
+            musteriler.forEach(m => seciliMusteriler.add(m.id));
+        }
+        musterileriGoster(); // Checkbox'ları güncellemek için yeniden çiz
+        updateDeleteButtonState();
     }
     
-    function musteriSil(id) {
-        if (confirm("Bu müşteriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
-            musteriler = musteriler.filter(m => m.id !== id);
+    function updateDeleteButtonState() {
+        const btn = document.getElementById('deleteSelectedBtn');
+        btn.disabled = seciliMusteriler.size === 0;
+        btn.innerText = seciliMusteriler.size > 0 ? `${seciliMusteriler.size} Müşteriyi Sil` : 'Seçilenleri Sil';
+    }
+
+    function deleteSelected() {
+        if (seciliMusteriler.size === 0) return;
+        if (confirm(`${seciliMusteriler.size} müşteriyi silmek istediğinizden emin misiniz?`)) {
+            musteriler = musteriler.filter(m => !seciliMusteriler.has(m.id));
+            seciliMusteriler.clear();
             kaydetLocal();
             musterileriGoster();
-            // Eğer silinen müşterinin detayı açıksa paneli temizle
+            updateDeleteButtonState();
             document.getElementById("detayPaneli").innerHTML = "";
         }
     }
 
     function musteriDetayGoster(id) {
-      const m = musteriler.find(x => x.id === id);
-      const panel = document.getElementById("detayPaneli");
-      panel.innerHTML = `
-        <div class="panel">
-          <h3>${m.ad} - Detay Paneli</h3>
-          <label>Telefon Numarası:</label>
-          <input type="tel" id="tel_${id}" value="${m.telefon}" placeholder="05xx xxx xx xx">
-
-          <label>Tesisat No:</label>
-          <input type="text" id="tesisat_${id}" value="${m.tesisat}" placeholder="Tesisat numarası">
-
-          <label>Adres:</label>
-          <input type="text" id="adres_${id}" value="${m.adres}" placeholder="Adres girin">
-
-          <label>Durum:</label>
-          <select id="durum_${id}" onchange="durumDegisti(${id})">
-            <option ${m.durum === "Aranacak" ? "selected" : ""}>Aranacak</option>
-            <option ${m.durum === "Randevuda" ? "selected" : ""}>Randevuda</option>
-            <option ${m.durum === "Gidilecek" ? "selected" : ""}>Gidilecek</option>
-            <option ${m.durum === "Satış" ? "selected" : ""}>Satış</option>
-          </select>
-
-          <div id="kwhContainer_${id}" class="${m.durum === 'Satış' ? '' : 'hidden'}">
-            <label>KWh:</label>
-            <input type="number" id="kwh_${id}" value="${m.kwh}" placeholder="KWh değeri">
-          </div>
-
-          <button onclick="kaydet(${id})">Kaydet</button>
-        </div>
-      `;
-    }
-
-    function durumDegisti(id) {
-      const durum = document.getElementById(`durum_${id}`).value;
-      const kwhDiv = document.getElementById(`kwhContainer_${id}`);
-      if (durum === "Satış") {
-        kwhDiv.classList.remove("hidden");
-      } else {
-        kwhDiv.classList.add("hidden");
-      }
-    }
-
-    function kaydet(id) {
-      const m = musteriler.find(x => x.id === id);
-      const tel = document.getElementById(`tel_${id}`).value.trim();
-      const tesisat = document.getElementById(`tesisat_${id}`).value.trim();
-      const adres = document.getElementById(`adres_${id}`).value.trim();
-      const durum = document.getElementById(`durum_${id}`).value;
-      const kwhInput = document.getElementById(`kwh_${id}`);
-      const kwh = kwhInput ? kwhInput.value.trim() : "";
-
-      if (durum === "Satış" && !kwh) {
-        alert("Satış seçildi, KWh girilmesi zorunlu!");
-        return;
-      }
-
-      m.telefon = tel;
-      m.tesisat = tesisat;
-      m.adres = adres;
-      m.durum = durum;
-      m.kwh = kwh;
-
-      kaydetLocal();
-      alert("Müşteri bilgileri kaydedildi.");
-      musterileriGoster(); // Listeyi durum değişikliğiyle güncelle
-      document.getElementById("detayPaneli").innerHTML = "";
-    }
-
-    function kaydetLocal() {
-      localStorage.setItem("musteriler", JSON.stringify(musteriler));
-    }
-  </script>
-</body>
-</html>
+        const m = musteriler.find(x => x.id === id);
+        const panel = document.getElementById("detayPaneli");
+        panel.innerHTML = `
+            <div class="panel">
+            <h3>${m.ad} - Detay Paneli</h3>
+            <label>Telefon:</label><input type="tel" id="tel_${id}" value="${m.telefon}">
+            <label>Tesisat No:</label><input type="text" id="tesisat_${id}" value="${m.tesisat}">
+            <label>Adres:</label><input type="text" id="adres_${id}" value="${m.adres}">
+            <label>Durum:</label>
+            <select id="durum_${id}" onchange="durumDegisti(${id})">
+                <option ${m.durum === "Aranacak" ? "selected" : ""}>Aranacak</option>
+                <option ${m.durum === "Randevuda" ? "selected" : ""}>Randevuda</option>
+                <option ${m.durum === "Gidilecek" ? "selected" : ""}>Gidilecek</option>
+                <option ${m.durum === "Satış" ? "selected" : ""}>Satış</option>
+            </select>
+            <div id="kwhContainer_${id}" class="${m.durum === 'Satış' ? '' : 'hidden'}">
+                <label>KWh:</label><input type="number" id="kwh_${id
