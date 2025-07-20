@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <script src="https://unpkg.com/dexie@3/dist/dexie.js"></script>
   <style>
-    /* ... CSS stillerinizde herhangi bir değişiklik yok, aynı şekilde kalabilir ... */
+    /* CSS stillerinizde herhangi bir değişiklik yok, aynı şekilde kalabilir */
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; margin: 0; padding: 0; background: #f0f2f5; color: #1c1e21; display: flex; height: 100vh; overflow: hidden; }
     .left-panel { width: 380px; display: flex; flex-direction: column; border-right: 1px solid #dddfe2; background: #fff; }
     .right-panel { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; align-items: center; justify-content: center; }
@@ -21,7 +21,7 @@
     button:hover { opacity: 0.9; }
     button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
     .add-btn { background-color: #1877f2; }
-    .close-btn { background-color: #6c757d; } /* YENİ: Kapat butonu stili */
+    .close-btn { background-color: #6c757d; }
     .delete-selected-btn { background-color: #fa3e3e; }
     .file-input-label { background-color: #e4e6eb; color: #1c1e21; padding: 10px 15px; border-radius: 6px; cursor: pointer; display: inline-block; font-weight: bold; }
     .musteri-list-container { flex-grow: 1; overflow-y: auto; padding: 8px; }
@@ -42,7 +42,7 @@
     .detay-resim-container { text-align: center; margin-bottom: 20px; }
     .detay-resim { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); background-color: #e4e6eb; }
     .hidden { display: none; }
-    .action-buttons { display: flex; gap: 10px; margin-top: 15px;} /* YENİ: Butonları yan yana dizmek için */
+    .action-buttons { display: flex; gap: 10px; margin-top: 15px;}
     @media (max-width: 768px) {
         body { flex-direction: column; overflow: auto; height: auto; }
         .left-panel { width: 100%; height: 45vh; border-right: none; border-bottom: 1px solid #dddfe2; }
@@ -65,28 +65,53 @@
       </div>
       <div id="musteriListesi" class="musteri-list-container"></div>
   </div>
-
   <div class="right-panel">
       <div class="panel-content" id="detayPaneli">
+          <div style="text-align: center; color: #65676b;">
+            <h3>Hoş Geldiniz!</h3>
+            <p>Detayları görmek için listeden bir müşteri seçin veya yeni bir müşteri ekleyin.</p>
           </div>
+      </div>
   </div>
 
   <script>
+    // JavaScript kodunun çoğu öncekiyle aynı...
     const db = new Dexie('MusteriDatabase');
-    db.version(2).stores({
-        musteriler: '++id, ad, durum, resim'
-    });
+    db.version(2).stores({ musteriler: '++id, ad, durum, resim' });
+
+    // ... (diğer tüm fonksiyonlar aynı kalacak) ...
+    // SADECE KAYDET FONKSİYONU DEĞİŞECEK
+
+    async function kaydet(id) {
+        const guncellemeler = {
+            telefon: document.getElementById(`tel_${id}`).value.trim(),
+            tesisat: document.getElementById(`tesisat_${id}`).value.trim(),
+            adres: document.getElementById(`adres_${id}`).value.trim(),
+            durum: document.getElementById(`durum_${id}`).value,
+            kwh: document.getElementById(`kwh_${id}`).value.trim()
+        };
+        if (guncellemeler.durum === "Satış" && !guncellemeler.kwh) {
+            return alert("Satış durumu için KWh değeri girilmesi zorunludur!");
+        }
+        
+        await db.musteriler.update(id, guncellemeler);
+        alert("Müşteri bilgileri güncellendi.");
+        
+        // DEĞİŞİKLİK BURADA:
+        // Diğer fonksiyonları çağırmak yerine, sayfayı tamamen yeniliyoruz.
+        location.reload(); 
+    }
+
+    // Geri kalan tüm JavaScript fonksiyonları (loadMusteriler, musteriEkle, musterileriGoster vb.)
+    // bir önceki kod bloğundaki gibi aynı şekilde kalacak.
+    // Aşağıya kolaylık olması için tam script'i tekrar ekliyorum.
 
     let musteriler = [];
     let seciliMusteriler = new Set();
-    let aktifMusteriId = null; // YENİ: Hangi müşterinin detayının açık olduğunu takip eder.
+    let aktifMusteriId = null; 
     const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NlZDBkNCI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgM2MxLjY2IDAgMyAxLjM0IDMgM3MtMS4zNCAzLTMgMy0zLTEuMzQtMy0zIDEuMzQtMyAzIDN6bTAgMTRjLTIuMzMgMC00LjMxLTEuMDctNS42OC0yLjc5Ljc3LTEuMjkgMi4yMy0yLjEyIDMuOTItMi4xMiAxLjY5IDAgMy4xNS44MyAzLjkyIDIuMTJDMTYuMzEgMTcuOTMgMTQuMzMgMTkgMTIgMTl6Ii8+PC9zdmc+';
 
-    const hosgeldinMesaji = `
-        <div style="text-align: center; color: #65676b;">
-            <h3>Hoş Geldiniz!</h3>
-            <p>Detayları görmek için listeden bir müşteri seçin veya yeni bir müşteri ekleyin.</p>
-        </div>`;
+    const hosgeldinMesaji = `<div style="text-align: center; color: #65676b;"><h3>Hoş Geldiniz!</h3><p>Detayları görmek için listeden bir müşteri seçin veya yeni bir müşteri ekleyin.</p></div>`;
     
     window.onload = async function() {
       await db.open();
@@ -100,17 +125,13 @@
         musterileriGoster();
     }
     
-    // --- MÜŞTERİ GÖSTERİMİ VE PANEL YÖNETİMİ ---
-
     function musterileriGoster() {
       const liste = document.getElementById("musteriListesi");
       liste.innerHTML = "";
       musteriler.forEach(m => {
         const item = document.createElement("div");
         item.className = `musteri-item ${aktifMusteriId === m.id ? 'active' : ''}`;
-        
         const resimUrl = m.resim ? URL.createObjectURL(m.resim) : defaultAvatar;
-
         item.innerHTML = `
             <input type="checkbox" data-id="${m.id}" onchange="toggleSelection(event, ${m.id})" ${seciliMusteriler.has(m.id) ? 'checked' : ''}>
             <img src="${resimUrl}" class="musteri-profil-resmi">
@@ -125,57 +146,23 @@
     }
 
     async function musteriDetayGoster(id) {
-        // DEĞİŞİKLİK: Eğer aynı müşteriye tekrar tıklanırsa paneli kapat
         if (aktifMusteriId === id) {
             kapatDetayPaneli();
             return;
         }
-        
-        aktifMusteriId = id; // YENİ: Aktif müşteri ID'sini ayarla
-        musterileriGoster(); // Listeyi güncelleyip aktif kartı işaretle
-
+        aktifMusteriId = id;
+        musterileriGoster();
         const m = await db.musteriler.get(id);
         const panel = document.getElementById("detayPaneli");
         const resimUrl = m.resim ? URL.createObjectURL(m.resim) : defaultAvatar;
-
-        panel.innerHTML = `
-            <div class="panel">
-              <div class="detay-resim-container">
-                <img src="${resimUrl}" class="detay-resim" id="detayProfilResmi">
-                <br><br>
-                <label for="resimInput_${id}" class="file-input-label">Resmi Değiştir</label>
-                <input type="file" id="resimInput_${id}" class="hidden" accept="image/*" onchange="resimDegistir(${id})">
-              </div>
-              <h3>${m.ad}</h3>
-              <label>Telefon:</label><input type="tel" id="tel_${id}" value="${m.telefon || ''}">
-              <label>Tesisat No:</label><input type="text" id="tesisat_${id}" value="${m.tesisat || ''}">
-              <label>Adres:</label><textarea id="adres_${id}" rows="3">${m.adres || ''}</textarea>
-              <label>Durum:</label>
-              <select id="durum_${id}" onchange="durumDegisti(${id})">
-                  <option ${m.durum === "Aranacak" ? "selected" : ""}>Aranacak</option>
-                  <option ${m.durum === "Randevuda" ? "selected" : ""}>Randevuda</option>
-                  <option ${m.durum === "Gidilecek" ? "selected" : ""}>Gidilecek</option>
-                  <option ${m.durum === "Satış" ? "selected" : ""}>Satış</option>
-              </select>
-              <div id="kwhContainer_${id}" class="${m.durum === 'Satış' ? '' : 'hidden'}">
-                  <label>KWh:</label><input type="number" id="kwh_${id}" value="${m.kwh || ''}">
-              </div>
-              <div class="action-buttons">
-                  <button class="add-btn" onclick="kaydet(${id})">Değişiklikleri Kaydet</button>
-                  <button class="close-btn" onclick="kapatDetayPaneli()">Kapat</button>
-              </div>
-            </div>
-        `;
+        panel.innerHTML = `<div class="panel"> <div class="detay-resim-container"> <img src="${resimUrl}" class="detay-resim" id="detayProfilResmi"> <br><br> <label for="resimInput_${id}" class="file-input-label">Resmi Değiştir</label> <input type="file" id="resimInput_${id}" class="hidden" accept="image/*" onchange="resimDegistir(${id})"> </div> <h3>${m.ad}</h3> <label>Telefon:</label><input type="tel" id="tel_${id}" value="${m.telefon || ''}"> <label>Tesisat No:</label><input type="text" id="tesisat_${id}" value="${m.tesisat || ''}"> <label>Adres:</label><textarea id="adres_${id}" rows="3">${m.adres || ''}</textarea> <label>Durum:</label> <select id="durum_${id}" onchange="durumDegisti(${id})"> <option ${m.durum === "Aranacak" ? "selected" : ""}>Aranacak</option> <option ${m.durum === "Randevuda" ? "selected" : ""}>Randevuda</option> <option ${m.durum === "Gidilecek" ? "selected" : ""}>Gidilecek</option> <option ${m.durum === "Satış" ? "selected" : ""}>Satış</option> </select> <div id="kwhContainer_${id}" class="${m.durum === 'Satış' ? '' : 'hidden'}"> <label>KWh:</label><input type="number" id="kwh_${id}" value="${m.kwh || ''}"> </div> <div class="action-buttons"> <button class="add-btn" onclick="kaydet(${id})">Değişiklikleri Kaydet</button> <button class="close-btn" onclick="kapatDetayPaneli()">Kapat</button> </div> </div>`;
     }
 
-    // YENİ: Detay panelini kapatan fonksiyon
     function kapatDetayPaneli() {
         document.getElementById('detayPaneli').innerHTML = hosgeldinMesaji;
         aktifMusteriId = null;
-        musterileriGoster(); // Listeyi güncelleyip aktif işaretini kaldır
+        musterileriGoster();
     }
-
-    // --- CRUD VE DİĞER FONKSİYONLAR ---
 
     async function musteriEkle() {
       const ad = document.getElementById("musteriAdi").value.trim();
@@ -183,37 +170,17 @@
       const yeniMusteri = { ad, telefon: "", tesisat: "", adres: "", durum: "Aranacak", kwh: "", resim: null };
       const yeniId = await db.musteriler.add(yeniMusteri);
       await loadMusteriler();
-      musteriDetayGoster(yeniId); // Yeni eklenen müşterinin detayını direkt aç
+      musteriDetayGoster(yeniId);
     }
 
-    async function kaydet(id) {
-        const guncellemeler = {
-            telefon: document.getElementById(`tel_${id}`).value.trim(),
-            tesisat: document.getElementById(`tesisat_${id}`).value.trim(),
-            adres: document.getElementById(`adres_${id}`).value.trim(),
-            durum: document.getElementById(`durum_${id}`).value,
-            kwh: document.getElementById(`kwh_${id}`).value.trim()
-        };
-        if (guncellemeler.durum === "Satış" && !guncellemeler.kwh) {
-            return alert("Satış durumu için KWh değeri girilmesi zorunludur!");
-        }
-        await db.musteriler.update(id, guncellemeler);
-        alert("Müşteri bilgileri güncellendi.");
-        await loadMusteriler();
-        kapatDetayPaneli(); // DEĞİŞTİ: Kaydettikten sonra paneli kapat
-    }
-    
     async function deleteSelected() {
         if (seciliMusteriler.size === 0) return;
         if (confirm(`${seciliMusteriler.size} müşteriyi kalıcı olarak silmek istediğinizden emin misiniz?`)) {
             const silinecekIdler = Array.from(seciliMusteriler);
             await db.musteriler.bulkDelete(silinecekIdler);
-            
-            // Eğer silinenler arasında aktif müşteri varsa paneli kapat
             if (silinecekIdler.includes(aktifMusteriId)) {
                 kapatDetayPaneli();
             }
-
             seciliMusteriler.clear();
             await loadMusteriler();
             updateDeleteButtonState();
@@ -225,6 +192,7 @@
         if (!file) return;
         await db.musteriler.update(id, { resim: file });
         await musteriDetayGoster(id);
+        await loadMusteriler();
     }
     
     function toggleSelection(event, id) {
