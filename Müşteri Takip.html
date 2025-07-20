@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Müşteri Takip Sistemi</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    input, select {
+      padding: 8px;
+      margin: 5px 0 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .musteri-btn {
+      background-color: #ecf0f1;
+      margin: 5px 0;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .musteri-btn:hover {
+      background-color: #d0d3d4;
+    }
+
+    .panel {
+      background: #fff;
+      padding: 15px;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Yeni Müşteri Ekle</h2>
+  <input type="text" id="musteriAdi" placeholder="Müşteri adı girin">
+  <button onclick="musteriEkle()">Ekle</button>
+
+  <h2>Müşteriler</h2>
+  <div id="musteriListesi"></div>
+
+  <div id="detayPaneli"></div>
+
+  <script>
+    let musteriler = [];
+
+    // Sayfa yüklendiğinde localStorage'dan verileri al
+    window.onload = function() {
+      const data = localStorage.getItem("musteriler");
+      if (data) {
+        musteriler = JSON.parse(data);
+        musterileriGoster();
+      }
+    };
+
+    function musteriEkle() {
+      const ad = document.getElementById("musteriAdi").value.trim();
+      if (!ad) return alert("Lütfen müşteri adı girin.");
+
+      const id = Date.now();
+      musteriler.push({ id, ad, telefon: "", tesisat: "", adres: "", durum: "", kwh: "" });
+
+      document.getElementById("musteriAdi").value = "";
+      kaydetLocal();
+      musterileriGoster();
+    }
+
+    function musterileriGoster() {
+      const liste = document.getElementById("musteriListesi");
+      liste.innerHTML = "";
+      musteriler.forEach(m => {
+        const btn = document.createElement("div");
+        btn.className = "musteri-btn";
+        btn.innerText = m.ad;
+        btn.onclick = () => musteriDetayGoster(m.id);
+        liste.appendChild(btn);
+      });
+    }
+
+    function musteriDetayGoster(id) {
+      const m = musteriler.find(x => x.id === id);
+      const panel = document.getElementById("detayPaneli");
+      panel.innerHTML = `
+        <div class="panel">
+          <h3>${m.ad} - Detay Paneli</h3>
+          <label>Telefon Numarası:</label>
+          <input type="tel" id="tel_${id}" value="${m.telefon}" placeholder="05xx xxx xx xx">
+
+          <label>Tesisat No:</label>
+          <input type="text" id="tesisat_${id}" value="${m.tesisat}" placeholder="Tesisat numarası">
+
+          <label>Adres:</label>
+          <input type="text" id="adres_${id}" value="${m.adres}" placeholder="Adres girin">
+
+          <label>Durum:</label>
+          <select id="durum_${id}" onchange="durumDegisti(${id})">
+            <option ${m.durum === "Randevuda" ? "selected" : ""}>Randevuda</option>
+            <option ${m.durum === "Aranacak" ? "selected" : ""}>Aranacak</option>
+            <option ${m.durum === "Gidilecek" ? "selected" : ""}>Gidilecek</option>
+            <option ${m.durum === "Satış" ? "selected" : ""}>Satış</option>
+          </select>
+
+          <div id="kwhContainer_${id}" class="${m.durum === 'Satış' ? '' : 'hidden'}">
+            <label>KWh:</label>
+            <input type="number" id="kwh_${id}" value="${m.kwh}" placeholder="KWh değeri">
+          </div>
+
+          <button onclick="kaydet(${id})">Kaydet</button>
+        </div>
+      `;
+    }
+
+    function durumDegisti(id) {
+      const durum = document.getElementById(`durum_${id}`).value;
+      const kwhDiv = document.getElementById(`kwhContainer_${id}`);
+      if (durum === "Satış") {
+        kwhDiv.classList.remove("hidden");
+      } else {
+        kwhDiv.classList.add("hidden");
+      }
+    }
+
+    function kaydet(id) {
+      const m = musteriler.find(x => x.id === id);
+      const tel = document.getElementById(`tel_${id}`).value.trim();
+      const tesisat = document.getElementById(`tesisat_${id}`).value.trim();
+      const adres = document.getElementById(`adres_${id}`).value.trim();
+      const durum = document.getElementById(`durum_${id}`).value;
+      const kwhInput = document.getElementById(`kwh_${id}`);
+      const kwh = kwhInput ? kwhInput.value.trim() : "";
+
+      if (durum === "Satış" && !kwh) {
+        alert("Satış seçildi, KWh girilmesi zorunlu!");
+        return;
+      }
+
+      m.telefon = tel;
+      m.tesisat = tesisat;
+      m.adres = adres;
+      m.durum = durum;
+      m.kwh = kwh;
+
+      kaydetLocal();
+      alert("Müşteri bilgileri kaydedildi.");
+      musterileriGoster();
+      document.getElementById("detayPaneli").innerHTML = "";
+    }
+
+    function kaydetLocal() {
+      localStorage.setItem("musteriler", JSON.stringify(musteriler));
+    }
+  </script>
+</body>
+</html>
